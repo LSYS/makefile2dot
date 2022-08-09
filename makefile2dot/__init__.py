@@ -28,13 +28,13 @@ def stream_database():
             yield line.strip()
 
 
-def build_graph(stream, **kwargs):
+def build_graph(stream, direction, flowchart):
     """
     Build a dependency graph from the Makefile database.
     """
 
     graph = gv.Digraph(comment="Makefile")
-    graph.attr(rankdir=kwargs.get('direction', 'TB'))
+    graph.attr(rankdir=direction) 
     for line in stream:
         target, dependencies = line.split(':')
 
@@ -51,24 +51,24 @@ def build_graph(stream, **kwargs):
                 graph.node(dependency, shape="rectangle")
             else:
                 graph.node(dependency, shape="rectangle")
-                graph.edge(target, dependency)
+                if flowchart:
+                    graph.edge(dependency, target)
+                else:
+                    graph.edge(target, dependency)
 
     return graph
 
 
-def makefile2dot(**kwargs):
+def makefile2dot(direction, output, view, flowchart):
     """
     Visualize a Makefile as a Graphviz graph.
     """
-
-    direction = kwargs.get('direction', "BT")
+    if flowchart and (direction=="BT"):
+        direction = "TB"
     if direction not in ["LR", "RL", "BT", "TB"]:
         raise ValueError('direction must be one of "BT", "TB", "LR", RL"')
 
-    output = kwargs.get('output', '')
-    view = kwargs.get('view', False)
-
-    graph = build_graph(stream_database(), direction=direction)
+    graph = build_graph(stream_database(), direction=direction, flowchart=flowchart)
     if output == "":
         if view:
             graph.view()
